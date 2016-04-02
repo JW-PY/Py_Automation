@@ -1,0 +1,51 @@
+# This script is written for Python 3+
+
+import getpass
+import telnetlib
+import time
+
+HOST = {
+'10.1.1.2': 'switch1',
+'10.1.1.3': 'switch2'
+}
+
+password = ('EnterPassword')
+enable = ('EnterPassword')
+
+
+filename = ('')
+
+#This function telnets to all devices in the HOST dict, gets the counters and wtites them to a file
+
+def GetPorts():
+    for i in HOST:
+       tn = telnetlib.Telnet(i, 23, 5)
+       tn.read_until(b"Password: ")
+       tn.write(password.encode('ascii') + b"\n")
+       tn.write(b"terminal len 0\n")
+       tn.write(b"sh ver\r\n")
+       time.sleep(5)
+       tn.write(b"en\r\n")
+       time.sleep(1)
+       tn.write(enable.encode('ascii') + b"\n")
+       time.sleep(1)
+       tn.write(b"sh interfaces counters | include 0             0\r\n")
+       time.sleep(5)
+       tn.write(b"exit\n")
+       f = open('%s.txt' %HOST[i], 'w')
+       f.write (tn.read_all().decode('ascii'))
+       f.close()
+       tn.close()
+       Fa = 0
+       Gi = 0
+       for line in open('%s.txt' % HOST[i], 'r'):
+           if line.startswith('G'):
+               Gi = Gi + 1
+           if line.startswith('F'):
+               Fa = Fa + 1
+       print(HOST[i], 'has', Gi, 'free Gigabit Ethernet ports')
+       print(HOST[i], 'has', Fa, 'free Fast Ethernet ports')
+
+GetPorts()
+
+
