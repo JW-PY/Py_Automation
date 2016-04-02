@@ -1,7 +1,7 @@
-#!/usr/bin/python
-
 import paramiko
 import time
+import os, datetime
+
 
 
 def disable_paging_hpn(remote_conn):
@@ -15,10 +15,29 @@ def disable_paging_hpn(remote_conn):
 
     return output
 
+def make_directory():
+    directory = '/home/mininet/backups'
+
+    #create the backup directort if it does not exist
+    if not os.path.isdir(directory):
+        print 'making dir'
+        os.makedirs(directory)
+
+    os.chdir(directory)
+    print "Current working dir : %s" % os.getcwd()
+
+    #Create the directory for the output files dd/mm/yyyy
+    mydir = os.path.join(os.getcwd(), datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    os.makedirs(mydir)
+
 
 if __name__ == '__main__':
 
-    # VARIABLES THAT NEED CHANGING !
+
+    # Call the make directory funtion
+    make_directory()
+
+    # VARIABLES THAT NEED CHANGING
     ip = '192.168.56.20'
     username = 'admin'
     password = 'public'
