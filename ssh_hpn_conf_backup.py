@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# Written for Python 2.7
 
 import paramiko
 import time
