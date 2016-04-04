@@ -1,7 +1,7 @@
 # Py_Automation
 Python automation
 
-This script requires parimiko which also needs pycrypto.
+Scripts that require parimiko also need pycrypto.
 
 To install run:
 
