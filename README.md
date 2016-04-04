@@ -5,7 +5,7 @@ This script requires parimiko which also needs pycrypto.
 
 To install run:
 
-pip install pycrypto
+pip install pycrypto\n
 pip install paramiko
 
 pycrypto can be tricky to install on ubuntu as it often complains of missing files even when a c compiler is installed.
