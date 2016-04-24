@@ -93,6 +93,15 @@ def free_port_clean_brackets():
     f1.close()
     f2.close()
 
+def ssh_exception():
+    print HOST[i], 'had the following error', e
+    ExceptFile = open('failures.txt', 'a')
+    message = (HOST[i], 'had the following error', e)
+    message = str(message)
+    ExceptFile.write (message)
+    ExceptFile.write (a)
+    ExceptFile.close()
+
 if __name__ == '__main__':
 
     # List of devices to iterate over
@@ -101,18 +110,16 @@ if __name__ == '__main__':
 	#load all the devices into the HOST dictionary
     load_hosts()
 	
-    # VARIABLES THAT NEED CHANGING
-    username = 'admin'
-    password = 'public'
-	
-    #user_command = raw_input(b'Enter exec command please: ')
-    #password = raw_input('Enter password: ')
+    # Collect credentials
+    username = raw_input(b'Enter username: ')
+    password = raw_input('Enter password: ')
 
     # Call the make directory funtion
     make_directory()
 
 
     for i in HOST:
+        a = ('\n')
         # Create instance of SSHClient object
         remote_conn_pre = paramiko.SSHClient()
 
@@ -120,50 +127,58 @@ if __name__ == '__main__':
         remote_conn_pre.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         # initiate SSH connection
+        print " "
         print "Attempting connection to %s" % i
-        remote_conn_pre.connect(i, username=username, password=password, look_for_keys=False, allow_agent=False)
-        print "SSH connection established to %s" % i
+        try:
+            remote_conn_pre.connect(i, username=username, password=password, look_for_keys=False, allow_agent=False)
+            print "SSH connection established to %s" % i
+		
+            # Use invoke_shell to establish an 'interactive session'
+            remote_conn = remote_conn_pre.invoke_shell()
+            print "Interactive SSH session established"
 
-        # Use invoke_shell to establish an 'interactive session'
-        remote_conn = remote_conn_pre.invoke_shell()
-        print "Interactive SSH session established"
+            # Strip the initial router prompt
+            output = remote_conn.recv(1000)
 
-        # Strip the initial router prompt
-        output = remote_conn.recv(1000)
+            # See what we have
+            print output
 
-        # See what we have
-        print output
+            # Turn off paging by calling paging function
+            disable_paging_hpn(remote_conn)
 
-        # Turn off paging by calling paging function
-        disable_paging_hpn(remote_conn)
+            # Now let's try to send the router a command
+            remote_conn.send("\n")
+            remote_conn.send("display counters inbound interface\n")
+            time.sleep(3)    # Wait for the command to complete
+            output = remote_conn.recv(5000)
+            print output
+            #Write to a file with the name of the switch
+            f = open('%s.txt' %HOST[i], 'w')
+            f.write (output.decode('ascii'))
+            f.close()
 
-        # Now let's try to send the router a command
-        remote_conn.send("\n")
-        remote_conn.send("display counters inbound interface\n")
-        time.sleep(3)    # Wait for the command to complete
-        output = remote_conn.recv(5000)
-        print output
-        #Write to a file with the name of the switch
-        f = open('%s.txt' %HOST[i], 'w')
-        f.write (output.decode('ascii'))
-        f.close()
+            # Call the free ports function
+            free_ports()
 
-        # Call the free ports function
-        free_ports()
-
-        print ' '
-        print '######################################################'
-        print ' '
-	
+            print ' '
+            print '######################################################'
+            print ' '
+        except (paramiko.ssh_exception.BadHostKeyException, paramiko.ssh_exception.AuthenticationException, paramiko.ssh_exception.SSHException, paramiko.ssh_exception.socket.error) as e:
+            ssh_exception()
+		   
     #Remove remove the commas, quotes, and parentheses from the free ports file. 
-    free_port_clean_comma()
-    free_port_clean_quotes()
-    free_port_clean_brackets()
-    # Clean up the redundant files
-    filename1 = 'free_ports_brackets.txt'
-    filename2 = 'free_ports.txt'
-    os.system ("copy %s %s" % (filename1, filename2))
-    os.remove ('free_ports_comma.txt')
-    os.remove ('free_ports_quotes.txt')
-    os.remove ('free_ports_brackets.txt')
-	
+    try:
+        free_port_clean_comma()
+        free_port_clean_quotes()
+        free_port_clean_brackets()
+        # Clean up the redundant files
+        filename1 = 'free_ports_brackets.txt'
+        filename2 = 'free_ports.txt'
+        os.system ("copy %s %s" % (filename1, filename2))
+        os.remove ('free_ports_comma.txt')
+        os.remove ('free_ports_quotes.txt')
+        os.remove ('free_ports_brackets.txt')
+    except IOError:
+        print "*********************************************************"	
+        print "Failed cleanup due to exceptions check failures.txt file"
+        print "*********************************************************"
