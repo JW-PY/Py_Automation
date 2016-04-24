@@ -7,6 +7,12 @@ import time
 import os, datetime
 
 
+#This function loads all the devices into the dictionary
+def load_hosts():
+    with open("hosts.txt") as HostFile:
+       for line in HostFile:
+            (key, val) = line.split()
+            HOST[(key)] = val
 
 def disable_paging_hpn(remote_conn):
     #Disable paging on a HPN device
@@ -20,7 +26,7 @@ def disable_paging_hpn(remote_conn):
     return output
 
 def make_directory():
-    directory = '/home/mininet/free_ports'
+    directory = '/automation/free_ports'
 
     #create the backup directort if it does not exist
     if not os.path.isdir(directory):
@@ -38,6 +44,7 @@ def make_directory():
 def free_ports():
     Fa = 0
     Gi = 0
+    a = ('\n')
     # This function loops over the output to calculate the ports with 0 input
     for line in open('%s.txt' % HOST[i], 'r'):
         if line.startswith('G'):
@@ -49,22 +56,57 @@ def free_ports():
     GiStatement = HOST[i], 'has', Gi, 'free Gigabit Ethernet ports'
     FaStatement = HOST[i], 'has', Fa, 'free Fast Ethernet ports'
     GiStatement = str(GiStatement)
+    GiStatement = ''.join(GiStatement)
     FaStatement = str(FaStatement)
-    with open("free ports.txt", "a") as myfile:
-        myfile.write (GiStatement)
-        myfile.write (FaStatement)
+    FaStatement = ''.join(FaStatement)
+    with open("free_ports.txt", "a") as myfile:
+        myfile.write (GiStatement+'\n')
+        myfile.write (FaStatement+'\n')
+        myfile.write (a)
+        myfile.close()
+
+def free_port_clean_comma():
+    a = ('\n')
+    f1 = open('free_ports.txt', 'r')
+    f2 = open('free_ports_comma.txt', 'a')
+    for line in f1:
+       f2.write(line.replace(',', ''))
+    f1.close()
+    f2.close()
+
+def free_port_clean_quotes():
+    a = ('\n')
+    f1 = open('free_ports_comma.txt', 'r')
+    f2 = open('free_ports_quotes.txt', 'a')
+    for line in f1:
+       f2.write(line.replace("'", ''))
+    f1.close()
+    f2.close()	
+
+def free_port_clean_brackets():
+    a = ('\n')
+    f1 = open('free_ports_quotes.txt', 'r')
+    f2 = open('free_ports_brackets.txt', 'a')
+    for line in f1:
+       f2.write(line[1:-2])
+       f2.write(a)
+    f1.close()
+    f2.close()
 
 if __name__ == '__main__':
 
-    # List of divices to iterate over
-    HOST = {
-    '192.168.56.10': 'switch1',
-    '192.168.56.20': 'switch2'
-    }
+    # List of devices to iterate over
+    HOST = {}
+	
+	#load all the devices into the HOST dictionary
+    load_hosts()
+	
     # VARIABLES THAT NEED CHANGING
-    ip = '192.168.56.20'
     username = 'admin'
     password = 'public'
+	
+    #user_command = raw_input(b'Enter exec command please: ')
+    #password = raw_input('Enter password: ')
 
     # Call the make directory funtion
     make_directory()
@@ -112,4 +154,16 @@ if __name__ == '__main__':
         print ' '
         print '######################################################'
         print ' '
-
+	
+    #Remove remove the commas, quotes, and parentheses from the free ports file. 
+    free_port_clean_comma()
+    free_port_clean_quotes()
+    free_port_clean_brackets()
+    # Clean up the redundant files
+    filename1 = 'free_ports_brackets.txt'
+    filename2 = 'free_ports.txt'
+    os.system ("copy %s %s" % (filename1, filename2))
+    os.remove ('free_ports_comma.txt')
+    os.remove ('free_ports_quotes.txt')
+    os.remove ('free_ports_brackets.txt')
+	
