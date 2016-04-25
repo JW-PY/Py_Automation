@@ -2,10 +2,13 @@
 # Written for Python 2.7
 # Version 1.0
 
+# This program provides to functions. The 1st is to clear the port statistics on all HP switches loaded into the HOST.txt file.
+# the 2nd is to collect the port statstics from all HP switches loaded into the HOST.txt file and then write the results to a file.
+# Its best to do the port clearing weeks ahead of the port collection to account for staff being on leave.
+
 import paramiko
 import time
 import os, datetime
-
 
 #This function loads all the devices into the dictionary
 def load_hosts():
@@ -13,6 +16,7 @@ def load_hosts():
        for line in HostFile:
             (key, val) = line.split()
             HOST[(key)] = val
+
 
 def disable_paging_hpn(remote_conn):
     #Disable paging on a HPN device
@@ -25,23 +29,21 @@ def disable_paging_hpn(remote_conn):
 
     return output
 
-def make_directory():
-    directory = '/automation/free_ports'
-
-    #create the backup directort if it does not exist
+def make_directory(folder):
+    directory = str("/automation/" + folder)
+    #create the backup directory if it does not exist
     if not os.path.isdir(directory):
         print 'making dir'
         os.makedirs(directory)
-
     os.chdir(directory)
     print "Current working dir : %s" % os.getcwd()
-
     #Create the directory for the output files dd/mm/yyyy
     mydir = os.path.join(os.getcwd(), datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
     os.makedirs(mydir)
     os.chdir(mydir)
 
-def free_ports():
+
+def free_ports(i):
     Fa = 0
     Gi = 0
     a = ('\n')
@@ -93,7 +95,8 @@ def free_port_clean_brackets():
     f1.close()
     f2.close()
 
-def ssh_exception():
+def ssh_exception(i,e):
+    a = ('\n')
     print HOST[i], 'had the following error', e
     ExceptFile = open('failures.txt', 'a')
     message = (HOST[i], 'had the following error', e)
@@ -102,24 +105,10 @@ def ssh_exception():
     ExceptFile.write (a)
     ExceptFile.close()
 
-if __name__ == '__main__':
-
-    # List of devices to iterate over
-    HOST = {}
-	
-	#load all the devices into the HOST dictionary
-    load_hosts()
-	
-    # Collect credentials
-    username = raw_input(b'Enter username: ')
-    password = raw_input('Enter password: ')
-
+def collect_port_data(HOST):
     # Call the make directory funtion
-    make_directory()
-
-
+    make_directory('free_ports')
     for i in HOST:
-        a = ('\n')
         # Create instance of SSHClient object
         remote_conn_pre = paramiko.SSHClient()
 
@@ -146,25 +135,24 @@ if __name__ == '__main__':
             # Turn off paging by calling paging function
             disable_paging_hpn(remote_conn)
 
-            # Now let's try to send the router a command
+            # Send commands to the device
             remote_conn.send("\n")
             remote_conn.send("display counters inbound interface\n")
-            time.sleep(3)    # Wait for the command to complete
+            time.sleep(2)    # Wait for the command to complete
             output = remote_conn.recv(5000)
             print output
             #Write to a file with the name of the switch
             f = open('%s.txt' %HOST[i], 'w')
             f.write (output.decode('ascii'))
             f.close()
-
             # Call the free ports function
-            free_ports()
+            free_ports(i)
 
             print ' '
             print '######################################################'
             print ' '
         except (paramiko.ssh_exception.BadHostKeyException, paramiko.ssh_exception.AuthenticationException, paramiko.ssh_exception.SSHException, paramiko.ssh_exception.socket.error) as e:
-            ssh_exception()
+            ssh_exception(i,e)
 		   
     #Remove remove the commas, quotes, and parentheses from the free ports file. 
     try:
@@ -182,3 +170,88 @@ if __name__ == '__main__':
         print "*********************************************************"	
         print "Failed cleanup due to exceptions check failures.txt file"
         print "*********************************************************"
+
+def clear_ports(HOST):
+    # Call the make directory funtion
+    make_directory('clear_ports')
+    for i in HOST:
+        # Create instance of SSHClient object
+        remote_conn_pre = paramiko.SSHClient()
+
+        # Automatically add untrusted hosts (make sure okay for security policy in your environment)
+        remote_conn_pre.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # initiate SSH connection
+        print " "
+        print "Attempting connection to %s" % i
+        try:
+            remote_conn_pre.connect(i, username=username, password=password, look_for_keys=False, allow_agent=False)
+            print "SSH connection established to %s" % i
+		
+            # Use invoke_shell to establish an 'interactive session'
+            remote_conn = remote_conn_pre.invoke_shell()
+            print "Interactive SSH session established"
+
+            # Strip the initial router prompt
+            output = remote_conn.recv(1000)
+
+            # See what we have
+            print output
+
+            # Turn off paging by calling paging function
+            disable_paging_hpn(remote_conn)
+
+            # Send commands to the device
+            remote_conn.send("\n")
+            remote_conn.send("reset counters interface\n")
+            time.sleep(2)    # Wait for the command to complete
+            output = remote_conn.recv(5000)
+            print output
+            #Write to a file with the name of the switch
+            f = open('%s.txt' %HOST[i], 'w')
+            f.write (output.decode('ascii'))
+            f.close()
+            #Record successful clearing of counters in a file
+            with open("Successful.txt", "a") as myfile:
+               comment = (HOST[i], 'ports cleared')
+               comment = str(comment)
+               myfile.write (comment+'\n')
+               myfile.close()
+            print ' '
+            print '######################################################'
+            print ' '
+        except (paramiko.ssh_exception.BadHostKeyException, paramiko.ssh_exception.AuthenticationException, paramiko.ssh_exception.SSHException, paramiko.ssh_exception.socket.error) as e:
+            ssh_exception(i,e)
+
+if __name__ == '__main__':
+
+    # List of devices to iterate over
+    HOST = {}
+	
+	#load all the devices into the HOST dictionary
+    load_hosts()
+	
+    # Collect credentials
+    print ""  
+    print ""
+    username = raw_input(b'Enter username: ')
+    password = raw_input('Enter password: ')
+    print ""  
+    print ""
+    print ''' 1 - Clear port statistics
+ 2 - Find number of free ports
+ 3 - Exit
+    '''
+    choice = raw_input(b'Enter selection number: ')
+    choice = int(choice)
+    if choice == 1:	
+        clear_ports(HOST)
+    elif  choice == 2:
+        collect_port_data(HOST)
+    elif choice == 3:
+        print ' '	
+        print "Bye"
+        time.sleep(1)
+    else:
+        print 'Incorrect selection'
+        time.sleep(1)
