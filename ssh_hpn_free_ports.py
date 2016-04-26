@@ -211,9 +211,20 @@ def clear_ports(HOST):
             f = open('%s.txt' %HOST[i], 'w')
             f.write (output.decode('ascii'))
             f.close()
+            #Record failure of clearing of counters in a file
+            for line in open('%s.txt' % HOST[i], 'r'):
+                if line.startswith('Permission denied.'):
+                    f = open('failures.txt', 'a')
+                    message = (HOST[i], 'Device reported: Permission denied after reset counters command was executed')
+                    message = str(message)
+                    f.write (message)
+                    f.write (a)
+                    f.close()
+                else:
+				    continue
             #Record successful clearing of counters in a file
-            with open("Successful.txt", "a") as myfile:
-               comment = (HOST[i], 'ports cleared')
+            with open("Successful connections.txt", "a") as myfile:
+               comment = ('Successful ssh connection to', HOST[i],'and command sent to terminal')
                comment = str(comment)
                myfile.write (comment+'\n')
                myfile.close()
@@ -227,7 +238,7 @@ if __name__ == '__main__':
 
     # List of devices to iterate over
     HOST = {}
-	
+    a = ('\n')
 	#load all the devices into the HOST dictionary
     load_hosts()
 	
@@ -255,3 +266,6 @@ if __name__ == '__main__':
     else:
         print 'Incorrect selection'
         time.sleep(1)
+
+
+        
