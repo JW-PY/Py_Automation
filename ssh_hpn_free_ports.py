@@ -53,8 +53,8 @@ def free_ports(i):
             Gi = Gi + 1
         if line.startswith('F'):
             Fa = Fa + 1
-    print HOST[i], 'has', Gi, 'free Gigabit Ethernet ports'
-    print HOST[i], 'has', Fa, 'free Fast Ethernet ports'
+    print HOST[i], 'has', G, 'free Gigabit Ethernet ports'
+    print HOST[i], 'has', F, 'free Fast Ethernet ports'
     GiStatement = HOST[i], 'has', Gi, 'free Gigabit Ethernet ports'
     FaStatement = HOST[i], 'has', Fa, 'free Fast Ethernet ports'
     GiStatement = str(GiStatement)
@@ -137,7 +137,7 @@ def collect_port_data(HOST):
 
             # Send commands to the device
             remote_conn.send("\n")
-            remote_conn.send("display counters inbound interface\n")
+            remote_conn.send("display counters inbound interface | include 0                  0                  0         0\n")
             time.sleep(2)    # Wait for the command to complete
             output = remote_conn.recv(5000)
             print output
@@ -243,13 +243,24 @@ if __name__ == '__main__':
     load_hosts()
 	
     # Collect credentials
+    print '''
+	
+	
+	
+ HPN Comware 5 free port tool
+ 
+ All results are stored in the folder named automation
+ 
+ 
+ 
+    '''
+    username = raw_input(b' Enter username: ')
+    password = raw_input(' Enter password: ')
     print ""  
     print ""
-    username = raw_input(b'Enter username: ')
-    password = raw_input('Enter password: ')
-    print ""  
-    print ""
-    print ''' 1 - Clear port statistics
+    print ''' 
+	
+ 1 - Clear port statistics
  2 - Find number of free ports
  3 - Exit
     '''
@@ -266,6 +277,3 @@ if __name__ == '__main__':
     else:
         print 'Incorrect selection'
         time.sleep(1)
-
-
-        
