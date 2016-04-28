@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Written for Python 2.7
-# Version 1.0
+# Version 1.1
 
 # This program provides to functions. The 1st is to clear the port statistics on all HP switches loaded into the HOST.txt file.
 # the 2nd is to collect the port statstics from all HP switches loaded into the HOST.txt file and then write the results to a file.
@@ -53,8 +53,8 @@ def free_ports(i):
             Gi = Gi + 1
         if line.startswith('F'):
             Fa = Fa + 1
-    print HOST[i], 'has', G, 'free Gigabit Ethernet ports'
-    print HOST[i], 'has', F, 'free Fast Ethernet ports'
+    print HOST[i], 'has', Gi, 'free Gigabit Ethernet ports'
+    print HOST[i], 'has', Fa, 'free Fast Ethernet ports'
     GiStatement = HOST[i], 'has', Gi, 'free Gigabit Ethernet ports'
     FaStatement = HOST[i], 'has', Fa, 'free Fast Ethernet ports'
     GiStatement = str(GiStatement)
@@ -104,7 +104,16 @@ def ssh_exception(i,e):
     ExceptFile.write (message)
     ExceptFile.write (a)
     ExceptFile.close()
+	
+def app_close():
+    print '''
 
+   
+ Finished !
+   
+    '''
+    close = raw_input (' Press x and enter to close: ')   
+ 
 def collect_port_data(HOST):
     # Call the make directory funtion
     make_directory('free_ports')
@@ -137,7 +146,7 @@ def collect_port_data(HOST):
 
             # Send commands to the device
             remote_conn.send("\n")
-            remote_conn.send("display counters inbound interface | include 0                  0                  0         0\n")
+            remote_conn.send("display counters inbound interface | include    0                  0                  0         0\n")
             time.sleep(2)    # Wait for the command to complete
             output = remote_conn.recv(5000)
             print output
@@ -263,13 +272,16 @@ if __name__ == '__main__':
  1 - Clear port statistics
  2 - Find number of free ports
  3 - Exit
+ 
     '''
     choice = raw_input(b'Enter selection number: ')
     choice = int(choice)
     if choice == 1:	
         clear_ports(HOST)
+        app_close()
     elif  choice == 2:
         collect_port_data(HOST)
+        app_close()
     elif choice == 3:
         print ' '	
         print "Bye"
