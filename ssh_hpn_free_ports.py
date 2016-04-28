@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # Written for Python 2.7
-# Version 1.1
+# Version 1.2
 
 # This program provides to functions. The 1st is to clear the port statistics on all HP switches loaded into the HOST.txt file.
 # the 2nd is to collect the port statstics from all HP switches loaded into the HOST.txt file and then write the results to a file.
@@ -49,9 +49,9 @@ def free_ports(i):
     a = ('\n')
     # This function loops over the output to calculate the ports with 0 input
     for line in open('%s.txt' % HOST[i], 'r'):
-        if line.startswith('G'):
+        if "G" in line and " 0                  0                  0         0" in line:
             Gi = Gi + 1
-        if line.startswith('F'):
+        if "F" in line and " 0                  0                  0         0" in line:
             Fa = Fa + 1
     print HOST[i], 'has', Gi, 'free Gigabit Ethernet ports'
     print HOST[i], 'has', Fa, 'free Fast Ethernet ports'
@@ -146,7 +146,7 @@ def collect_port_data(HOST):
 
             # Send commands to the device
             remote_conn.send("\n")
-            remote_conn.send("display counters inbound interface | include    0                  0                  0         0\n")
+            remote_conn.send("display counters inbound interface\n")
             time.sleep(2)    # Wait for the command to complete
             output = remote_conn.recv(5000)
             print output
