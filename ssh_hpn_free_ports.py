@@ -2,7 +2,7 @@
 # Written for Python 2.7
 # Version 1.2
 
-# This program provides to functions. The 1st is to clear the port statistics on all HP switches loaded into the HOST.txt file.
+# This program provides two functions. The 1st is to clear the port statistics on all HP switches loaded into the HOST.txt file.
 # the 2nd is to collect the port statstics from all HP switches loaded into the HOST.txt file and then write the results to a file.
 # Its best to do the port clearing weeks ahead of the port collection to account for staff being on leave.
 
